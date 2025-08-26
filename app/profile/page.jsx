@@ -1,74 +1,61 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Form from "@components/Form";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
-function EditPromptContent() {
+import Profile from "@components/Profile";
+
+const MyProfile = () => {
   const router = useRouter();
   const { data: session } = useSession();
-  const searchParams = useSearchParams();
-  const promptId = searchParams.get("id");
 
-  const [submitting, setSubmitting] = useState(false);
-  const [post, setPost] = useState({ prompt: "", tag: "" });
+  const [myPosts, setMyPosts] = useState([]);
 
   useEffect(() => {
-    const getPromptDetails = async () => {
-      const response = await fetch(`/api/prompt/${promptId}`);
+    const fetchPosts = async () => {
+      const response = await fetch(`/api/users/${session?.user.id}/posts`);
       const data = await response.json();
 
-      setPost({
-        prompt: data.prompt,
-        tag: data.tag,
-      });
+      setMyPosts(data);
     };
 
-    if (promptId) getPromptDetails();
-  }, [promptId]);
+    if (session?.user.id) fetchPosts();
+  }, [session?.user.id]);
 
-  const UpdatePrompt = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
+  const handleEdit = (post) => {
+    router.push(`/update-prompt?id=${post._id}`);
+  };
 
-    if (!promptId) return alert("Prompt ID not found");
+  const handleDelete = async (post) => {
+    const hasConfirmed = confirm(
+      "Are you sure you want to delete this prompt?"
+    );
 
-    try {
-      const response = await fetch(`/api/prompt/${promptId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" }, // ✅ important
-        body: JSON.stringify({
-          prompt: post.prompt,
-          tag: post.tag,
-        }),
-      });
+    if (hasConfirmed) {
+      try {
+        await fetch(`/api/prompt/${post._id.toString()}`, {
+          method: "DELETE",
+        });
 
-      if (response.ok) {
-        router.push("/");
+        const filteredPosts = myPosts.filter((item) => item._id !== post._id);
+
+        setMyPosts(filteredPosts);
+      } catch (error) {
+        console.log(error);
       }
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setSubmitting(false);
     }
   };
 
   return (
-    <Form
-      type="Edit"
-      post={post}
-      setPost={setPost}
-      submitting={submitting}
-      handdleSubmit={UpdatePrompt}
+    <Profile
+      name='My'
+      desc='Welcome to your personalized profile page. Share your exceptional prompts and inspire others with the power of your imagination'
+      data={myPosts}
+      handleEdit={handleEdit}
+      handleDelete={handleDelete}
     />
   );
-}
+};
 
-export default function Page() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <EditPromptContent />
-    </Suspense>
-  );
-}
+export default MyProfile;
