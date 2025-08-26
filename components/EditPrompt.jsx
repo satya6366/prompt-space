@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Form from "@components/Form";
@@ -37,6 +37,7 @@ function EditPromptContent() {
     try {
       const response = await fetch(`/api/prompt/${promptId}`, {
         method: "PATCH",
+        headers: { "Content-Type": "application/json" }, // ✅ important
         body: JSON.stringify({
           prompt: post.prompt,
           tag: post.tag,
@@ -64,7 +65,7 @@ function EditPromptContent() {
   );
 }
 
-export default function EditPrompt() {
+export default function Page() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <EditPromptContent />
